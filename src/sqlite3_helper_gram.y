@@ -23,10 +23,10 @@ gather information into database?
 
 
 
-input ::= sql_interface. {printf("parse done, input exhausted\n");}
+input ::= sql_interface.
 
-sql_interface ::= sql_interface sql. {printf("got somthing again!\n");}
-sql_interface ::= sql. {printf("got somthing!\n");}
+sql_interface ::= sql_interface sql.
+sql_interface ::= sql.
 
 // rewrite string with removals and '?'s for saving and comparison
 // query need sub-name extracted
@@ -37,7 +37,7 @@ sql_interface ::= sql. {printf("got somthing!\n");}
 // tables
 // for each query
 // 
-sql ::= SETUP LPAREN IDENT(A) COMMA string RPAREN SEMI. {printf("got sql!\n");
+sql ::= SETUP LPAREN IDENT(A) COMMA string RPAREN SEMI. {
 
 	/* string is not used here, see recorded value in string.
 	 * take db name, make new entry if unique, record rowid
@@ -47,7 +47,7 @@ sql ::= SETUP LPAREN IDENT(A) COMMA string RPAREN SEMI. {printf("got sql!\n");
 	db_rowid = enter_db_name(A.s, A.l);
 	enter_setup_text(p_s, db_rowid);
 }
-sql ::= query_name LPAREN IDENT(A) COMMA string RPAREN SEMI. {printf("got sql!\n");
+sql ::= query_name LPAREN IDENT(A) COMMA string RPAREN SEMI. {
 	
 	s32 db_rowid, qt_key;
 	db_rowid = enter_db_name(A.s, A.l);
@@ -57,7 +57,7 @@ sql ::= query_name LPAREN IDENT(A) COMMA string RPAREN SEMI. {printf("got sql!\n
 	update_query_name(p_s->qn_key, qt_key);
 }
 
-query_name ::= QUERY(B). {printf("got query_name!\n");
+query_name ::= QUERY(B). {
 	
 	p_s->qn_key = enter_query_name( (B.s+11), (B.l-11) );
 	
@@ -69,7 +69,25 @@ string ::= QUOTE(A) idlist QUOTE(B). {
 	p_s->string_start=(A.s);
 	p_s->string_end=(B.s+1);}
 
-idlist ::= idlist IDENT. {printf("got idlist0!\n");}
+idlist ::= idlist IDENT.
+idlist ::= QMARK IDENT(A) COLON IDENT(B). {printf("got read variable!\n");
+	u32 type;
+	type = get_type(A.s);
+	enter_column_info(B.s, B.l, type, p_s->qn_key);
+
+}
+idlist ::= QMARK IDENT(A) ATSIGN IDENT(B). {printf("got write variable!\n");
+	u32 type;
+	type = get_type(A.s);
+	enter_bind_info(B.s, B.l, type, p_s->qn_key, 0, 0);
+	
+}
+idlist ::= QMARK IDENT(A) ATSIGN IDENT(B) DOLLAR IDENT(C). {printf("got write variable and size!\n");
+	u32 type;
+	type = get_type(A.s);
+	enter_bind_info(B.s, B.l, type, p_s->qn_key, C.s, C.l);
+	
+}
 idlist ::= idlist QMARK IDENT(A) COLON IDENT(B). {printf("got read variable!\n");
 	u32 type;
 	type = get_type(A.s);

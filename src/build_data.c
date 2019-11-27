@@ -1,87 +1,61 @@
 
+
 static s32
 enter_db_name(u8 * s,u32 l)
 {
-	sqlite3_stmt * sql_statement;
+	//sqlite3_stmt * sql_statement;
 	s32 n;
 	
+	SQL3_QUERY_find_db_name(db, "SELECT db_key=?i:n FROM db_names WHERE db_name=?t@s$l;");
+	
+	SQL3_BIND_find_db_name();
+	
 	/* prepare SQL query */
-	sqlite3_prepare_v2(
-		db,
-		"SELECT db_key FROM db_names WHERE db_name=?;",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		1,
-		(const char *)s, 
-		l,
-		SQLITE_STATIC);
-	/* execute sql statement */					
-	n = sqlite3_step(sql_statement);
+	n = SQL3_STEP_find_db_name();
 	if (n==SQLITE_ROW){ // we have a previous entry
-		n = sqlite3_column_int(sql_statement, 0);
-		sqlite3_finalize(sql_statement);
+		//n = sqlite3_column_int(sql_statement, 0);
+		SQL3_COL_find_db_name();
+		//sqlite3_finalize(sql_statement);
+		SQL3_RESET_find_db_name();
 		return n;
 	}
 	/* no previous entry */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_find_db_name();
 	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO db_names VALUES(NULL, @db_name);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		1,
-		(const char *)s, 
-		l,
-		SQLITE_STATIC);
-	n = sqlite3_step(sql_statement);
+	SQL3_QUERY_insert_db_name(db,
+		"INSERT INTO db_names VALUES("
+		"NULL, ?t@s$l);");
+	
+	SQL3_BIND_insert_db_name();
+	
+	n = SQL3_STEP_insert_db_name();
 	n = sqlite3_last_insert_rowid(db);
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_db_name();
 	return n;
 }
 
 static s32
 enter_setup_text(ParserState * p_s, s32 db_rowid)
 {
-	sqlite3_stmt * sql_statement;
+	//sqlite3_stmt * sql_statement;
+	u8 * string_start = p_s->string_start;
 	s32 n, str_len;
 	
 	/* "string"_
 	^^^*^^^^^^^*
 	* start and end */
-	str_len = p_s->string_end - p_s->string_start;
+	str_len = p_s->string_end - string_start;
 	
 	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO setup_texts VALUES(NULL, @db_rowid, @setup_text);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		db_rowid);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		2,
-		(const char *)p_s->string_start, 
-		str_len,
-		SQLITE_STATIC);
-	n = sqlite3_step(sql_statement);
+	SQL3_QUERY_insert_setup(db,
+		"INSERT INTO setup_texts VALUES(NULL, "
+		"?i@db_rowid, "
+		"?t@string_start$str_len);");
+	SQL3_BIND_insert_setup();
+	n = SQL3_STEP_insert_setup();
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_setup();
 	return n;
 }
 
@@ -105,7 +79,7 @@ clean_query_text(u8 * b, u8 * s, u8 * e)
 			break;
 		
 			case 1:
-			if( (*s==' ') || (*s==',') || (*s==';') || (*s==')') || (*s=='(') ) {
+			if( (*s==' ') || (*s==',') || (*s==';') || (*s==')') || (*s=='(') || (*s=='"') ) {
 				state = 0;
 				*b = *s;
 				b++;
@@ -121,7 +95,6 @@ clean_query_text(u8 * b, u8 * s, u8 * e)
 static s32
 enter_query_text(ParserState * p_s, s32 db_rowid)
 {
-	sqlite3_stmt * sql_statement;
 	s32 n /*,str_len*/;
 	u8 text_buff[1024];
 	
@@ -135,141 +108,83 @@ enter_query_text(ParserState * p_s, s32 db_rowid)
 	
 	
 	/* prepare SQL query */
-	sqlite3_prepare_v2(
-		db,
-		"SELECT qt_key FROM query_texts WHERE query_text=? AND fdb_key=?;",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		1,
-		(const char *)text_buff, 
-		-1,
-		SQLITE_STATIC);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		2,
-		db_rowid);
+	SQL3_QUERY_search_qt(db,
+		"SELECT qt_key=?i:n "
+		"FROM query_texts WHERE "
+		"query_text=?t@text_buff AND "
+		"fdb_key=?i@db_rowid;");
+	SQL3_BIND_search_qt();
 	/* execute sql statement */					
-	n = sqlite3_step(sql_statement);
+	n = SQL3_STEP_search_qt();
 	if (n==SQLITE_ROW){ // we have a previous entry for this db
-		n = sqlite3_column_int(sql_statement, 0);
-		sqlite3_finalize(sql_statement);
+		SQL3_COL_search_qt();
+		SQL3_RESET_search_qt();
 		return n;
 	}
 	/* no previous entry */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_search_qt();
 	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO query_texts VALUES(NULL, @db_rowid, @query_text);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		db_rowid);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		2,
-		(const char *)text_buff, 
-		-1,
-		SQLITE_STATIC);
-	n = sqlite3_step(sql_statement);
+	SQL3_QUERY_insert_qt(db,
+		"INSERT INTO query_texts VALUES(NULL, "
+		"?i@db_rowid, "
+		"?t@text_buff);");
+	
+	SQL3_BIND_insert_qt();
+	n = SQL3_STEP_insert_qt();
 	n = sqlite3_last_insert_rowid(db);
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_qt();
 	return n;
 }
 
 static s32
 enter_query_name(u8 * s, u32 l)
 {
-	sqlite3_stmt * sql_statement;
 	s32 n;
 	
 	/* prepare SQL query */
-	sqlite3_prepare_v2(
-		db,
-		"SELECT qn_key FROM query_names WHERE query_name=?;",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		1,
-		(const char *)s, 
-		l,
-		SQLITE_STATIC);
+	SQL3_QUERY_search_qn(db,
+		"SELECT qn_key=?i:n FROM query_names WHERE query_name=?t@s$l;");
+	/* bind variables */
+	SQL3_BIND_search_qn();
 	/* execute sql statement */					
-	n = sqlite3_step(sql_statement);
+	n = SQL3_STEP_search_qn();
 	if (n==SQLITE_ROW){ // we have a previous entry
-		n = sqlite3_column_int(sql_statement, 0);
-		sqlite3_finalize(sql_statement);
+		SQL3_COL_search_qn();
+		SQL3_RESET_search_qn();
 		printf("ERROR: Query Name used twice!!!\n");
 		return n;
 	}
 	/* no previous entry */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_search_qn();
+	n=0;
 	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO query_names VALUES(NULL, @qt_rowid, @query_name);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		0);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		2,
-		(const char *)s, 
-		l,
-		SQLITE_STATIC);
-	n = sqlite3_step(sql_statement);
+	SQL3_QUERY_insert_qn(db,
+		"INSERT INTO query_names VALUES(NULL, "
+		"?i@n, "
+		"?t@s$l);");
+	SQL3_BIND_insert_qn();
+	n = SQL3_STEP_insert_qn();
 	n = sqlite3_last_insert_rowid(db);
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_qn();
 	return n;
 }
 
 static s32
 update_query_name(u32 qn_key, s32 qt_key)
 {
-	sqlite3_stmt * sql_statement;
 	s32 n;
 	
 	/* prepare SQL query */
-	sqlite3_prepare_v2(
-		db,
-		"UPDATE query_names SET fqt_key=? WHERE qn_key=?;",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		qt_key);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		2,
-		qn_key);
+	SQL3_QUERY_update_qn(db,
+		"UPDATE query_names SET fqt_key=?i@qt_key "
+		"WHERE qn_key=?i@qn_key;");
+	/* bind variables */
+	SQL3_BIND_update_qn();
 	/* execute sql statement */					
-	n = sqlite3_step(sql_statement);
-	sqlite3_finalize(sql_statement);
+	n = SQL3_STEP_update_qn();
+	SQL3_RESET_update_qn();
 	return n;
 }
 
@@ -304,90 +219,45 @@ get_type(u8 * s)
 static s32
 enter_column_info(u8 * s, u32 l, u32 t, u32 qn_key)
 {
-	sqlite3_stmt * sql_statement;
 	s32 n;
 	
 	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO cols VALUES(NULL, @fqn_key, @type, @varname);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		qn_key);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		2,
-		t);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		3,
-		(const char *)s, 
-		l,
-		SQLITE_STATIC);
-	n = sqlite3_step(sql_statement);
+	SQL3_QUERY_insert_colInfo(db,
+		"INSERT INTO cols VALUES(NULL, "
+		"?i@qn_key, "
+		"?i@t, "
+		"?t@s$l);");
+	/* bind variables */
+	SQL3_BIND_insert_colInfo();
+	n = SQL3_STEP_insert_colInfo();
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_colInfo();
 	return n;
 }
 
 static s32
 enter_bind_info(u8 * nv, u32 nl, u32 t, u32 qn_key, u8 * s, u32 sl)
 {
-	sqlite3_stmt * sql_statement;
 	s32 n;
 	
-	/* prepare SQL insert */
-	sqlite3_prepare_v2(
-		db,
-		"INSERT INTO binds VALUES(NULL, @fqn_key, @type, @varval, @varsize);",
-		-1,
-		&sql_statement,
-		NULL);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		1,
-		qn_key);
-	/* bind in int */
-	sqlite3_bind_int(
-		sql_statement,
-		2,
-		t);
-	/* bind in text */
-	sqlite3_bind_text(
-		sql_statement,
-		3,
-		(const char *)nv, 
-		nl,
-		SQLITE_STATIC);
+	/* check if size is missing */
 	if ( (s==0) || (sl==0) ) {
-		/* bind in text */
-		sqlite3_bind_text(
-			sql_statement,
-			4,
-			"0", 
-			1,
-			SQLITE_STATIC);
-	} else {
-		/* bind in text */
-		sqlite3_bind_text(
-			sql_statement,
-			4,
-			(const char *)s, 
-			sl,
-			SQLITE_STATIC);
+		/* save zero */
+		s=(u8 *)"0";
+		sl=1;
 	}
 	
-	n = sqlite3_step(sql_statement);
+	/* prepare SQL insert */
+	SQL3_QUERY_insert_bind(db,
+		"INSERT INTO binds VALUES(NULL, "
+		"?i@qn_key, "
+		"?i@t, "
+		"?t@nv$nl, "
+		"?t@s$sl);");
+	SQL3_BIND_insert_bind();
+	n = SQL3_STEP_insert_bind();
 	/* all work has completed */
-	sqlite3_finalize(sql_statement);
+	SQL3_RESET_insert_bind();
 	return n;
 }
 

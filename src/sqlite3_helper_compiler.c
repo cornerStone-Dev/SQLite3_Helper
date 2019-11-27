@@ -4,6 +4,7 @@
 #include <stdlib.h>   
 #include <string.h>
 #include <stdint.h>
+#include <dirent.h>
 
 #define NDEBUG
 #define Parse_ENGINEALWAYSONSTACK
@@ -37,8 +38,7 @@ typedef struct parser_s{
 
 
 #include "../sqlite3/sqlite3.h"
-
-#include "../sqlite3/sqlite3.h"
+#include "../gen/sql3_macros.c"
 static sqlite3 * db;
 #include "build_data.c"
 #include "../tool_output/sqlite3_helper_gram.h"
@@ -46,133 +46,7 @@ static sqlite3 * db;
 #include "../tool_output/sqlite3_helper_gram.c"
 
 #define INTPUT_FILE "input/test.c"
-#define OUTPUT_FILE "output/sql3_macros.c"
-
-
-
-/* stmt enum */
-enum g_enum_stmts {
-	g_insrt_cntype,
-	g_sel_cnMemNum,
-	size_of_stmt_array
-};
-
-static sqlite3_stmt * g_stmtAr[size_of_stmt_array];
-//"CREATE TABLE cnt_type(typeName TEXT PRIMARY KEY, mem_num INTEGER) WITHOUT ROWID;"
-
-#define SELECT_CMN "SELECT mem_num FROM cnt_type WHERE typeName=?;"
-//static sqlite3_stmt * g_stmtArray[g_search_for_email];
-
-#define INSERT_CNTYPE \
-"INSERT INTO cnt_type VALUES(@nm, @mn);"
-//static sqlite3_stmt * g_stmtArray[g_insert_registration];
-
-#define SELECT_LOGIN_INFO \
-		"SELECT Auth_id, accessLevel, sesCookie, passSalt, passHash FROM " \
-		"AuthTable WHERE userEmail=? OR Auth_id=1 ORDER BY Auth_id DESC LIMIT 1;"
-//static sqlite3_stmt * g_stmtArray[g_select_login_info];
-
-#define UPDATE_PASSWORD "UPDATE AuthTable SET sesCookie=?, passHash=? WHERE Auth_id=?;"
-//static sqlite3_stmt * g_stmtArray[g_update_password];
-
-#define ALL_SQL_STATEMENTS \
-		INSERT_CNTYPE \
-		SELECT_CMN 
-
-//~ static s32
-//~ has_cnt_ending(u8 * mem_type)
-//~ {
-	//~ /* find '_' if it is there */
-	//~ while ( (*mem_type!='_') && (*mem_type!=0) ) {mem_type++;}
-	
-	//~ if (*mem_type!='_') {
-		//~ return 0;
-	//~ }
-	//~ mem_type++;
-	//~ if (*mem_type!='c') {
-		//~ return 0;
-	//~ }
-	//~ mem_type++;
-	//~ if (*mem_type!='n') {
-		//~ return 0;
-	//~ }
-	//~ mem_type++;
-	//~ if (*mem_type!='t') {
-		//~ return 0;
-	//~ }
-	//~ return 1;
-	
-//~ }
-
-//~ static s32
-//~ has_cnt_provided(ParserState * p_s, unsigned char * mem_type, u8 * cnt_type_loc, u32 mtl)
-//~ {
-	//~ s32 stm_state;
-	//~ s32 mem_num;
-
-	//~ sqlite3_bind_text(
-		//~ g_stmtAr[g_sel_cnMemNum],
-		//~ 1,
-		//~ (char *)mem_type,
-		//~ mtl,
-		//~ SQLITE_STATIC);
-	//~ stm_state = sqlite3_step(g_stmtAr[g_sel_cnMemNum]);
-	//~ if(stm_state == SQLITE_DONE) {
-		//~ return -1;
-	//~ }
-	//~ mem_num = sqlite3_column_int(g_stmtAr[g_sel_cnMemNum], 0);
-	//~ sqlite3_reset(g_stmtAr[g_sel_cnMemNum]);
-	//~ return mem_num;
-//~ }
-
-static void
-sematic_analysis(ParserState * p_s, unsigned char * output)
-{
-	
-}
-
-//~ static void
-//~ null_terminate(ParserState * p_s)
-//~ {
-	//~ for(s32 x = 0;x<p_s->n_m;x++) 
-	//~ {
-		//~ *(p_s->mem_type[x]+p_s->mtl[x])=0;
-		//~ *(p_s->mem_name[x]+p_s->mnl[x])=0;
-	//~ }
-	//~ /* null terminate type name */
-	//~ *(p_s->type_name+p_s->tnl)=0;
-//~ }
-
-static void 
-prepare_slq_statements(void)
-{
-	/* alternative loop based init */
-	const char * tail = 0;
-	int i=0;
-	
-	sqlite3_prepare_v2(db,  ALL_SQL_STATEMENTS, -1, &g_stmtAr[i], &tail);
-	for (i=1;i < size_of_stmt_array; i++){
-		sqlite3_prepare_v2(db,  tail, -1, &g_stmtAr[i], &tail);
-	}
-	return;
-}
-
-static s32
-execute_sql(const char * request)
-{
-	sqlite3_stmt * sql_statement;
-	int n;
-	
-	/* prepare SQL query */
-	sqlite3_prepare_v2(db,  request, 
-						-1, &sql_statement, NULL);
-	/* execute sql statement */					
-	n = sqlite3_step(sql_statement);
-	
-	/* all work has completed */
-	sqlite3_finalize(sql_statement);
-	return n;
-}
+#define OUTPUT_FILE "gen/sql3_macros.c"
 
 static void
 print_setup(void)
@@ -226,10 +100,10 @@ generate_setup(u8 * out)
 	sqlite3_stmt * sql_stmt2;
 	u8 * db_name, * setup_text;
 	s32 n, j, db_key, stmn_cnt=0;
-	s32 def_flag=0;
+	s32 def_flag=0,db_flag=0;
 	
 	/* read out db name and keys */
-	out+=sprintf((char*)out, "#define SQL3_SETUP(a,b)  \n");
+	
 	/* prepare SQL query */
 	sqlite3_prepare_v2(
 		db,
@@ -241,6 +115,11 @@ generate_setup(u8 * out)
 	/* execute sql statement */					
 	n = sqlite3_step(sql_stmt1);
 	while (n==SQLITE_ROW){ // we have an entry
+		if(db_flag==0){
+			db_flag=1;
+			/* output number of members */
+			out+=sprintf((char*)out, "#define SQL3_SETUP(a,b) do{}while(0)\n");
+		}
 		db_key = sqlite3_column_int(sql_stmt1, 0);
 		db_name = (u8 * )sqlite3_column_text(sql_stmt1, 1);
 		/* prepare SQL query */
@@ -257,7 +136,7 @@ generate_setup(u8 * out)
 			if(def_flag==0){
 				def_flag=1;
 				/* output number of members */
-				out+=sprintf((char*)out, "#define %s_SETUPTEXT \\\n", db_name);
+				out+=sprintf((char*)out, "const char * %s_SETUPTEXT =\\\n", db_name);
 			}
 			setup_text = (u8 * )sqlite3_column_text(sql_stmt2, 0);
 			out+=sprintf((char*)out, "%s \\\n", setup_text);
@@ -265,6 +144,7 @@ generate_setup(u8 * out)
 			j = sqlite3_step(sql_stmt2);
 		}
 		def_flag=0;
+		out+=sprintf((char*)out, ";\n");
 		// setup is in define
 		out+=sprintf(
 			(char*)out,
@@ -330,7 +210,7 @@ generate_queries(u8 * out)
 			if(def_flag==0){
 				def_flag=1;
 				/* output number of members */
-				out+=sprintf((char*)out, "#define %s_QUERYTEXT \\\n", db_name);
+				out+=sprintf((char*)out, "const char * %s_QUERYTEXT = \\\n", db_name);
 			}
 			qt_key[q_cnt] = sqlite3_column_int(sql_stmt2, 0);
 			query_text = (u8 * )sqlite3_column_text(sql_stmt2, 1);
@@ -340,7 +220,7 @@ generate_queries(u8 * out)
 			j = sqlite3_step(sql_stmt2);
 		}
 		def_flag=0;
-		
+		out+=sprintf((char*)out, ";\n");
 		// create enum
 		out+=sprintf((char*)out, "\n\n");
 		out+=sprintf((char*)out, "enum %s_enum_stmts {", db_name);
@@ -348,8 +228,8 @@ generate_queries(u8 * out)
 			out+=sprintf((char*)out, "%s_enum%d, \\\n", db_name, qt_key[i]);
 		}
 		out+=sprintf((char*)out, "%s_enum_size\n", db_name);
-		out+=sprintf((char*)out, "}\n\n");
-		out+=sprintf((char*)out, "static sqlite3_stmt * %s_stmt_array[%d]\n", db_name, q_cnt);
+		out+=sprintf((char*)out, "};\n\n");
+		out+=sprintf((char*)out, "static sqlite3_stmt * %s_stmt_array[%d];\n", db_name, q_cnt);
 		// setup is in define
 		out+=sprintf(
 			(char*)out,
@@ -366,6 +246,20 @@ generate_queries(u8 * out)
 			q_cnt,//3
 			db_name,//4
 			db_name);//5
+		// setup is in define
+		out+=sprintf(
+			(char*)out,
+			"\n\n#define %s_FINALIZE() \\\n"//1
+			"do{\\\n"
+			"for (int i=0;i < %d; i++){\\\n" //2
+			"\tsqlite3_finalize(%s_stmt_array[i]);\\\n"//3
+			"}\\\n"
+			"}while(0)\n\n"
+			,
+			db_name,//1
+			q_cnt,//2
+			db_name);//3
+		
 		sqlite3_finalize(sql_stmt2);
 		q_cnt=0;
 		n = sqlite3_step(sql_stmt1);
@@ -380,7 +274,7 @@ generate_macros(u8 * out)
 	sqlite3_stmt * sql_stmt2;
 	sqlite3_stmt * sql_stmt3;
 	sqlite3_stmt * sql_stmt4;
-	u8 * db_name, * query_text, * query_name, * varname, * varsize;
+	u8 * db_name, * query_name, * varname, * varsize;
 	s32 n, j, k, m, db_key, qt_key, qn_key;
 	s32 col_cnt=0, bind_cnt=1;
 	
@@ -402,7 +296,7 @@ generate_macros(u8 * out)
 		/* prepare SQL query */
 		sqlite3_prepare_v2(
 			db,
-			"SELECT qt_key, query_text FROM query_texts WHERE fdb_key=? ORDER BY qt_key ASC;",
+			"SELECT qt_key FROM query_texts WHERE fdb_key=? ORDER BY qt_key ASC;",
 			-1,
 			&sql_stmt2,
 			NULL);
@@ -411,7 +305,6 @@ generate_macros(u8 * out)
 		j = sqlite3_step(sql_stmt2);
 		while (j==SQLITE_ROW){ // we have an entry
 			qt_key = sqlite3_column_int(sql_stmt2, 0);
-			query_text = (u8 * )sqlite3_column_text(sql_stmt2, 1);
 			/* prepare SQL query */
 			sqlite3_prepare_v2(
 				db,
@@ -426,7 +319,7 @@ generate_macros(u8 * out)
 				qn_key = sqlite3_column_int(sql_stmt3, 0);
 				query_name = (u8 * )sqlite3_column_text(sql_stmt3, 1);
 				
-				out+=sprintf((char*)out, "#define SQL3_QUERY_%s(a,b)  \n", query_name);
+				out+=sprintf((char*)out, "#define SQL3_QUERY_%s(a,b) do{}while(0)\n", query_name);
 				out+=sprintf((char*)out,
 					"#define SQL3_STEP_%s()  sqlite3_step(%s_stmt_array[%s_enum%d])\n",
 					query_name,
@@ -513,7 +406,7 @@ generate_macros(u8 * out)
 						
 						default:
 						out+=sprintf((char*)out,
-							"%s=ERROR_INVALID_TYPE!!! \\\n");
+							"ERROR_INVALID_TYPE!!! \\\n");
 						break;
 					}
 					
@@ -549,51 +442,67 @@ generate_macros(u8 * out)
 					switch (m) {
 						//case 'b':
 						case 1:
-						out+=sprintf((char*)out,
-							"%s=sqlite3_column_blob(%s_stmt_array[%s_enum%d], %d); \\\n",
-							varname,
-							db_name,
-							db_name,
-							qt_key,
-							col_cnt);
+						if (*varsize!='0'){
+							out+=sprintf((char*)out,
+								"sqlite3_bind_blob(%s_stmt_array[%s_enum%d], %d, (const void *)%s, %s, SQLITE_STATIC); \\\n",
+								db_name,
+								db_name,
+								qt_key,
+								bind_cnt,
+								varname,
+								varsize);
+						} else {
+							printf("blob needs size*****\n");
+						}
 						break;
 						
 						//case 'i':
 						case 2:
 						out+=sprintf((char*)out,
-							"sqlite3_bind_int(%s_stmt_array[%s_enum%d], %d, ); \\\n",
-							varname,
+							"sqlite3_bind_int64(%s_stmt_array[%s_enum%d], %d, %s); \\\n",
 							db_name,
 							db_name,
 							qt_key,
-							col_cnt);
+							bind_cnt,
+							varname);
 						break;
 						
 						//case 't':
 						case 3:
-						out+=sprintf((char*)out,
-							"%s=sqlite3_column_text(%s_stmt_array[%s_enum%d], %d); \\\n",
-							varname,
-							db_name,
-							db_name,
-							qt_key,
-							col_cnt);
+						if (*varsize!='0'){
+							out+=sprintf((char*)out,
+								"sqlite3_bind_text(%s_stmt_array[%s_enum%d], %d, (const char *)%s, %s, SQLITE_STATIC); \\\n",
+								db_name,
+								db_name,
+								qt_key,
+								bind_cnt,
+								varname,
+								varsize);
+						} else {
+							out+=sprintf((char*)out,
+								"sqlite3_bind_text(%s_stmt_array[%s_enum%d], %d, (const char *)%s, -1, SQLITE_STATIC); \\\n",
+								db_name,
+								db_name,
+								qt_key,
+								bind_cnt,
+								varname);
+						}
 						break;
 						
 						//case 'd':
 						case 4:
 						out+=sprintf((char*)out,
-							"%s=sqlite3_column_double(%s_stmt_array[%s_enum%d], %d); \\\n",
-							varname,
+							"sqlite3_bind_double(%s_stmt_array[%s_enum%d], %d, %s); \\\n",
 							db_name,
 							db_name,
 							qt_key,
-							col_cnt);
+							bind_cnt,
+							varname);
 						break;
 						
 						default:
 						out+=sprintf((char*)out,
-							"%s=ERROR_INVALID_TYPE!!! \\\n");
+							"ERROR_INVALID_TYPE!!! \\\n");
 						break;
 					}
 					
@@ -735,38 +644,33 @@ int main(int argc, char **argv)
 	size_t lSize;
 	unsigned char * buffer;
 	size_t result;
+	DIR *d;
+    struct dirent *dir;
 	sqlite3_open(":memory:", &db);
-	execute_sql("CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);");
-	execute_sql("CREATE TABLE setup_texts(st_key INTEGER PRIMARY KEY, fdb_key INTEGER, setup_text TEXT);");
 	
-	execute_sql("CREATE TABLE query_texts(qt_key INTEGER PRIMARY KEY, fdb_key INTEGER, query_text TEXT);");
-	execute_sql("CREATE TABLE query_names(qn_key INTEGER PRIMARY KEY, fqt_key INTEGER, query_name TEXT);");
-	execute_sql("CREATE TABLE cols(col_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varname TEXT);");
-	execute_sql("CREATE TABLE binds(bind_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varval TEXT, varsize TEXT);");
+	db_SETUP();
+	db_PREPARE();
 	
-	/* prepare database statements */
-	prepare_slq_statements();
+	SQL3_SETUP(db, "CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);");
+	SQL3_SETUP(db, "CREATE TABLE setup_texts(st_key INTEGER PRIMARY KEY, fdb_key INTEGER, setup_text TEXT);");
 	
-	pFile = fopen ( INTPUT_FILE, "rb" );
-	if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
+	SQL3_SETUP(db, "CREATE TABLE query_texts(qt_key INTEGER PRIMARY KEY, fdb_key INTEGER, query_text TEXT);");
+	SQL3_SETUP(db, "CREATE TABLE query_names(qn_key INTEGER PRIMARY KEY, fqt_key INTEGER, query_name TEXT);");
+	SQL3_SETUP(db, "CREATE TABLE cols(col_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varname TEXT);");
+	SQL3_SETUP(db, "CREATE TABLE binds(bind_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varval TEXT, varsize TEXT);");
+	
+	
+	
+	//~ execute_sql("CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);");
+	//~ execute_sql("CREATE TABLE setup_texts(st_key INTEGER PRIMARY KEY, fdb_key INTEGER, setup_text TEXT);");
+	
+	//~ execute_sql("CREATE TABLE query_texts(qt_key INTEGER PRIMARY KEY, fdb_key INTEGER, query_text TEXT);");
+	//~ execute_sql("CREATE TABLE query_names(qn_key INTEGER PRIMARY KEY, fqt_key INTEGER, query_name TEXT);");
+	//~ execute_sql("CREATE TABLE cols(col_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varname TEXT);");
+	//~ execute_sql("CREATE TABLE binds(bind_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varval TEXT, varsize TEXT);");
 	
 	outputFile = fopen ( OUTPUT_FILE, "w" );
 	if (outputFile==NULL) {fputs ("File error",stderr); exit (1);}
-	
-	// obtain file size:
-	fseek (pFile , 0 , SEEK_END);
-	lSize = ftell (pFile);
-	rewind (pFile);
-
-	// allocate memory to contain the whole file:
-	buffer = (unsigned char*) malloc (sizeof(char)*lSize+1);
-	if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
-	data = buffer;
-	// copy the file into the buffer:
-	result = fread (buffer,1,lSize,pFile);
-	if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
-	
-	buffer[lSize]=0;
 	
 	/*pParser = ParseAlloc( malloc, &p_s );*/
 	pEngine = &sEngine;
@@ -777,23 +681,71 @@ int main(int argc, char **argv)
 #endif
 
 	printf("starting parse\n");
-	do {
-		tmp_token = lex(&data, &token);
-
-		Parse(pEngine, tmp_token, token); 
+	
+	/* open current directory */
+	d = opendir("src");
+	if (d==0)
+    {
+		printf("NO DIR!!!\n");
+		return -1;
+	}
+	
+	while ( ((dir = readdir(d)) != NULL) /*&& (strstr(dir->d_name, ".c")!=0)*/ )
+	{
+		//printf("Got in\n");
+		if ( (strstr(dir->d_name, ".c")!=0) ) {
+		printf("%s\n", dir->d_name);
 		
-	} while (tmp_token != 0);
+		sprintf((char *)output, "src/%s",dir->d_name);
+
+		pFile = fopen ( (char *)output, "rb" );
+		if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
+		
+		
+		
+		// obtain file size:
+		fseek (pFile , 0 , SEEK_END);
+		lSize = ftell (pFile);
+		rewind (pFile);
+
+		// allocate memory to contain the whole file:
+		buffer = (unsigned char*) malloc (sizeof(char)*lSize+1);
+		if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
+		data = buffer;
+		// copy the file into the buffer:
+		result = fread (buffer,1,lSize,pFile);
+		if (result != lSize) {fputs ("Reading error",stderr); exit (3);}
+		
+		/* null terminate buffer */
+		buffer[lSize]=0;
+	
+		do {
+			tmp_token = lex(&data, &token);
+
+			Parse(pEngine, tmp_token, token); 
+			
+		} while (tmp_token != 0);
+		fclose (pFile);
+		/* free memory that stored copy of file */
+		free (buffer);
+		}
+	}
+	
+	/* close directory */
+	closedir(d);
 	
 	/* output collected data, aka code gen */
-	print_setup();
-	print_queries();
+	//print_setup();
+	//print_queries();
 	
+	*output=0;
 	/* code gen */
 	generate_setup(output);
 	/* output to file */
 	fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
 	/* reset to start of array */
 	output = output_string;
+	*output=0;
 	
 	/* code gen */
 	generate_queries(output);
@@ -801,20 +753,19 @@ int main(int argc, char **argv)
 	fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
 	/* reset to start of array */
 	output = output_string;
+	*output=0;
 	
 	/* code gen */
 	generate_macros(output);
 	/* output to file */
 	fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
-	/* reset to start of array */
-	output = output_string;
 	
 	/* flush file out of cache and close both files */
 	fflush (outputFile); 
 	fclose (outputFile);
-	fclose (pFile);
-	/* free memory that stored copy of file */
-	free (buffer);
+
+	
+	db_FINALIZE();
 	/* free parser memory */
 	/*ParseFree(pParser, free );*/
 	ParseFinalize(pEngine);
