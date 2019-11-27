@@ -1,0 +1,9 @@
+# ignored files
+sqlite3/
+bin/
+input/
+output/
+test/
+tool/
+tool_output/
+*.geany
