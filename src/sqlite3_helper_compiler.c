@@ -48,6 +48,7 @@ static sqlite3 * db;
 #define INTPUT_FILE "input/test.c"
 #define OUTPUT_FILE "gen/sql3_macros.c"
 
+#ifndef NDEBUG
 static void
 print_setup(void)
 {
@@ -92,36 +93,34 @@ print_setup(void)
 	}
 	sqlite3_finalize(sql_stmt1);
 }
+#endif
 
 static void
 generate_setup(u8 * out)
 {
-	sqlite3_stmt * sql_stmt1;
 	sqlite3_stmt * sql_stmt2;
-	u8 * db_name, * setup_text;
+	const u8 * db_name, * setup_text;
 	s32 n, j, db_key, stmn_cnt=0;
 	s32 def_flag=0,db_flag=0;
 	
 	/* read out db name and keys */
 	
 	/* prepare SQL query */
-	sqlite3_prepare_v2(
-		db,
-		"SELECT db_key, db_name FROM db_names ORDER BY db_key ASC;",
-		-1,
-		&sql_stmt1,
-		NULL);
+	SQL3_QUERY_db_name_key(db,
+		"SELECT "
+		"db_key=?i:db_key, "
+		"db_name=?t:db_name "
+		"FROM db_names ORDER BY db_key ASC;");
 
 	/* execute sql statement */					
-	n = sqlite3_step(sql_stmt1);
+	n = SQL3_STEP_db_name_key();
 	while (n==SQLITE_ROW){ // we have an entry
 		if(db_flag==0){
 			db_flag=1;
 			/* output number of members */
 			out+=sprintf((char*)out, "#define SQL3_SETUP(a,b) do{}while(0)\n");
 		}
-		db_key = sqlite3_column_int(sql_stmt1, 0);
-		db_name = (u8 * )sqlite3_column_text(sql_stmt1, 1);
+		SQL3_COL_db_name_key();
 		/* prepare SQL query */
 		sqlite3_prepare_v2(
 			db,
@@ -167,9 +166,9 @@ generate_setup(u8 * out)
 			db_name);//5
 		sqlite3_finalize(sql_stmt2);
 		stmn_cnt=0;
-		n = sqlite3_step(sql_stmt1);
+		n = SQL3_STEP_db_name_key();
 	}
-	sqlite3_finalize(sql_stmt1);
+	SQL3_RESET_db_name_key();
 }
 
 static void
@@ -268,7 +267,7 @@ generate_queries(u8 * out)
 }
 
 static void
-generate_macros(u8 * out)
+generate_macros(u8 * out, u8 * begining, FILE * outputFile)
 {
 	sqlite3_stmt * sql_stmt1;
 	sqlite3_stmt * sql_stmt2;
@@ -452,7 +451,7 @@ generate_macros(u8 * out)
 								varname,
 								varsize);
 						} else {
-							printf("blob needs size*****\n");
+							printf("ERROR blob needs size*****\n");
 						}
 						break;
 						
@@ -515,6 +514,9 @@ generate_macros(u8 * out)
 				
 				out+=sprintf((char*)out,"}while(0)\n\n");
 				bind_cnt=1;
+				fwrite (begining , sizeof(char), strlen((const char *)begining), outputFile);
+				out = begining;
+				*out = 0;
 				k = sqlite3_step(sql_stmt3);
 			}
 			sqlite3_finalize(sql_stmt3);
@@ -527,6 +529,7 @@ generate_macros(u8 * out)
 	sqlite3_finalize(sql_stmt1);
 }
 
+#ifndef NDEBUG
 static void
 print_queries(void)
 {
@@ -628,6 +631,7 @@ print_queries(void)
 	}
 	sqlite3_finalize(sql_stmt1);
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -635,7 +639,7 @@ int main(int argc, char **argv)
 	const unsigned char * data;
 	void *pEngine;     /* The LEMON-generated LALR(1) parser */
 	yyParser sEngine;  /* Space to hold the Lemon-generated Parser object */
-	unsigned char output_string[8192] = {0};
+	unsigned char output_string[32768] = {0};
 	unsigned char * output = output_string;
 	Token token = {0};
 	int tmp_token;
@@ -659,16 +663,6 @@ int main(int argc, char **argv)
 	SQL3_SETUP(db, "CREATE TABLE cols(col_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varname TEXT);");
 	SQL3_SETUP(db, "CREATE TABLE binds(bind_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varval TEXT, varsize TEXT);");
 	
-	
-	
-	//~ execute_sql("CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);");
-	//~ execute_sql("CREATE TABLE setup_texts(st_key INTEGER PRIMARY KEY, fdb_key INTEGER, setup_text TEXT);");
-	
-	//~ execute_sql("CREATE TABLE query_texts(qt_key INTEGER PRIMARY KEY, fdb_key INTEGER, query_text TEXT);");
-	//~ execute_sql("CREATE TABLE query_names(qn_key INTEGER PRIMARY KEY, fqt_key INTEGER, query_name TEXT);");
-	//~ execute_sql("CREATE TABLE cols(col_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varname TEXT);");
-	//~ execute_sql("CREATE TABLE binds(bind_key INTEGER PRIMARY KEY, fqn_key INTEGER, type INTEGER, varval TEXT, varsize TEXT);");
-	
 	outputFile = fopen ( OUTPUT_FILE, "w" );
 	if (outputFile==NULL) {fputs ("File error",stderr); exit (1);}
 	
@@ -680,7 +674,7 @@ int main(int argc, char **argv)
 	ParseTrace(stdout, "debug:: ");
 #endif
 
-	printf("starting parse\n");
+	//printf("starting parse\n");
 	
 	/* open current directory */
 	d = opendir("src");
@@ -694,7 +688,7 @@ int main(int argc, char **argv)
 	{
 		//printf("Got in\n");
 		if ( (strstr(dir->d_name, ".c")!=0) ) {
-		printf("%s\n", dir->d_name);
+		//printf("%s\n", dir->d_name);
 		
 		sprintf((char *)output, "src/%s",dir->d_name);
 
@@ -735,9 +729,11 @@ int main(int argc, char **argv)
 	closedir(d);
 	
 	/* output collected data, aka code gen */
-	//print_setup();
-	//print_queries();
-	
+#ifndef NDEBUG
+	print_setup();
+	print_queries();
+#endif
+
 	*output=0;
 	/* code gen */
 	generate_setup(output);
@@ -756,9 +752,9 @@ int main(int argc, char **argv)
 	*output=0;
 	
 	/* code gen */
-	generate_macros(output);
+	generate_macros(output, output_string, outputFile);
 	/* output to file */
-	fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
+	//fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
 	
 	/* flush file out of cache and close both files */
 	fflush (outputFile); 

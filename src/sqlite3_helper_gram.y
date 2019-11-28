@@ -70,37 +70,37 @@ string ::= QUOTE(A) idlist QUOTE(B). {
 	p_s->string_end=(B.s+1);}
 
 idlist ::= idlist IDENT.
-idlist ::= QMARK IDENT(A) COLON IDENT(B). {printf("got read variable!\n");
+idlist ::= QMARK IDENT(A) COLON IDENT(B). {//printf("got read variable!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_column_info(B.s, B.l, type, p_s->qn_key);
 
 }
-idlist ::= QMARK IDENT(A) ATSIGN IDENT(B). {printf("got write variable!\n");
+idlist ::= QMARK IDENT(A) ATSIGN IDENT(B). {//printf("got write variable!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_bind_info(B.s, B.l, type, p_s->qn_key, 0, 0);
 	
 }
-idlist ::= QMARK IDENT(A) ATSIGN IDENT(B) DOLLAR IDENT(C). {printf("got write variable and size!\n");
+idlist ::= QMARK IDENT(A) ATSIGN IDENT(B) DOLLAR IDENT(C). {//printf("got write variable and size!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_bind_info(B.s, B.l, type, p_s->qn_key, C.s, C.l);
 	
 }
-idlist ::= idlist QMARK IDENT(A) COLON IDENT(B). {printf("got read variable!\n");
+idlist ::= idlist QMARK IDENT(A) COLON IDENT(B). {//printf("got read variable!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_column_info(B.s, B.l, type, p_s->qn_key);
 
 }
-idlist ::= idlist QMARK IDENT(A) ATSIGN IDENT(B). {printf("got write variable!\n");
+idlist ::= idlist QMARK IDENT(A) ATSIGN IDENT(B). {//printf("got write variable!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_bind_info(B.s, B.l, type, p_s->qn_key, 0, 0);
 	
 }
-idlist ::= idlist QMARK IDENT(A) ATSIGN IDENT(B) DOLLAR IDENT(C). {printf("got write variable and size!\n");
+idlist ::= idlist QMARK IDENT(A) ATSIGN IDENT(B) DOLLAR IDENT(C). {//printf("got write variable and size!\n");
 	u32 type;
 	type = get_type(A.s);
 	enter_bind_info(B.s, B.l, type, p_s->qn_key, C.s, C.l);

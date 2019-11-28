@@ -50,6 +50,10 @@ const char * db_QUERYTEXT = \
 		"?, "
 		"?, "
 		"?);" \
+"SELECT "
+		"db_key, "
+		"db_name "
+		"FROM db_names ORDER BY db_key ASC;" \
 ;
 
 
@@ -63,16 +67,17 @@ db_enum7, \
 db_enum8, \
 db_enum9, \
 db_enum10, \
+db_enum11, \
 db_enum_size
 };
 
-static sqlite3_stmt * db_stmt_array[10];
+static sqlite3_stmt * db_stmt_array[11];
 
 
 #define db_PREPARE() \
 do{\
 const char * t = db_QUERYTEXT;\
-for (int i=0;i < 10; i++){\
+for (int i=0;i < 11; i++){\
 	sqlite3_prepare_v2(db,  t, -1, &db_stmt_array[i], &t);\
 }\
 }while(0)
@@ -81,7 +86,7 @@ for (int i=0;i < 10; i++){\
 
 #define db_FINALIZE() \
 do{\
-for (int i=0;i < 10; i++){\
+for (int i=0;i < 11; i++){\
 	sqlite3_finalize(db_stmt_array[i]);\
 }\
 }while(0)
@@ -227,5 +232,19 @@ sqlite3_bind_int64(db_stmt_array[db_enum10], 1, qn_key); \
 sqlite3_bind_int64(db_stmt_array[db_enum10], 2, t); \
 sqlite3_bind_text(db_stmt_array[db_enum10], 3, (const char *)nv, nl, SQLITE_STATIC); \
 sqlite3_bind_text(db_stmt_array[db_enum10], 4, (const char *)s, sl, SQLITE_STATIC); \
+}while(0)
+
+#define SQL3_QUERY_db_name_key(a,b) do{}while(0)
+#define SQL3_STEP_db_name_key()  sqlite3_step(db_stmt_array[db_enum11])
+#define SQL3_RESET_db_name_key()  sqlite3_reset(db_stmt_array[db_enum11])
+#define SQL3_CLEAR_db_name_key()  sqlite3_clear_bindings(db_stmt_array[db_enum11])
+#define SQL3_COL_db_name_key()  \
+do{\
+db_key=sqlite3_column_int64(db_stmt_array[db_enum11], 0); \
+db_name=sqlite3_column_text(db_stmt_array[db_enum11], 1); \
+}while(0)
+
+#define SQL3_BIND_db_name_key()  \
+do{\
 }while(0)
 
