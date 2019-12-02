@@ -52,6 +52,10 @@ src:
 gen:
 	mkdir gen
 
+small:
+	rm -f -R tool
+	rm -f -R sqlite3
+
 clean:
 	rm bin/sqlite3Helper
 	rm -f tool_output/sqlite3_helper_gram.c
