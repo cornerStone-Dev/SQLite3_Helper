@@ -7,16 +7,17 @@ Uses lemon, but the Makefile will take care of that for you.
 
 Clone from git, then `$ make`
 
-When writing sqlite3 code it can time consuming to write out all the _prepare, _bind, _column, and _finalize statments.
+When writing sqlite3 code it can be time consuming to write out all the variables and _prepare, _bind, _column, and _finalize statments.
 This tool takes care of a lot of the work for you.
 This project is partially bootstrapped to show you can co-mingle sqlite 3 api code with this tool.
+By default it runs on all files ending in ".c" in directory src/.
 
 Set up code is in src/sqlite3_helper_compiler.c, browse src/build_data.c for examples of usage. 
 The following examples are taken from there.
 
 Syntax breakdown of "SELECT db_key=?i:n FROM db_names WHERE db_name=?t@s$l;": 
 
-db_key=?i:n = result of select query is type int to be put into variable c, which must be in scope.
+db_key=?i:n = result of select query is type int to be put into variable "n", which must be in scope.
 
 db_name=?t@s$l = this is a sqlite3 variable which is type TEXT, contained in "s" and optional length specified in "l".
 
@@ -26,7 +27,8 @@ db_SETUP(); // run ALL SQL statments for database "db" inside of SQL3_SETUP's
 db_PREPARE(); // prepare all SQL3_QUERY_* statements for their respective databases.
 SQL3_SETUP(db, "CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);");
 ...
-  SQL3_QUERY_find_db_name(db, "SELECT db_key=?i:n FROM db_names WHERE db_name=?t@s$l;"); // write query for tool to record, becomes nothing
+  // write query for tool to record, becomes nothing. "find_db_name" becomes the unique query name.
+  SQL3_QUERY_find_db_name(db, "SELECT db_key=?i:n FROM db_names WHERE db_name=?t@s$l;"); 
   SQL3_BIND_find_db_name(); // run all bind statements
   /* prepare SQL query */
   n = SQL3_STEP_find_db_name(); // step the query
@@ -40,7 +42,7 @@ SQL3_SETUP(db, "CREATE TABLE db_names(db_key INTEGER PRIMARY KEY, db_name TEXT);
 db_FINALIZE(); // finalize all statements and free memory
 ```
 
-This is all translated into the following macros which you would include at the top of your file. See at gen/sql3_macros.c
+This is all translated into the following macros which you would include at the top of your file. See at gen/sql3_macros.c for the full set of generated macros used to bootstrap this tool.
 
 ```c
 #define SQL3_SETUP(a,b) do{}while(0)
