@@ -10,7 +10,9 @@ Clone from git, then `$ make`
 When writing sqlite3 code it can be time consuming to write out all the variables and _prepare, _bind, _column, and _finalize statments.
 This tool takes care of a lot of the work for you.
 This project is partially bootstrapped to show you can co-mingle sqlite 3 api code with this tool.
-By default it runs on all files ending in ".c" in directory src/.
+By default it runs on all files ending in ".c" in directory src/. It will record all queries and set up SQL and generate macros. This allows you to write queries inline with where they are used without having a lot of clutter.
+
+Output is put into gen/sql3_macros.c, all you do is `#include "../gen/sql3_macros.c"` at or near the top of your application(assumed from the src/ directory) for this tool to work.
 
 Set up code is in src/sqlite3_helper_compiler.c, browse src/build_data.c for examples of usage. 
 The following examples are taken from there.
