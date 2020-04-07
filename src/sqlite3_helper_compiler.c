@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <dirent.h>
 
-#define NDEBUG
+//#define NDEBUG
 #define Parse_ENGINEALWAYSONSTACK
 
 #include "std_types.h"
@@ -676,7 +676,9 @@ int main(int argc, char **argv)
 	ParseTrace(stdout, "debug:: ");
 #endif
 
-	//printf("starting parse\n");
+#ifndef NDEBUG
+	printf("starting parse\n");
+#endif
 	
 	/* open current directory */
 	d = opendir("src");
@@ -699,6 +701,9 @@ int main(int argc, char **argv)
 		
 		
 		
+#ifndef NDEBUG
+	printf("no error1\n");
+#endif
 		// obtain file size:
 		fseek (pFile , 0 , SEEK_END);
 		lSize = ftell (pFile);
@@ -714,6 +719,10 @@ int main(int argc, char **argv)
 		
 		/* null terminate buffer */
 		buffer[lSize]=0;
+
+#ifndef NDEBUG
+	printf("no error2\n");
+#endif
 	
 		do {
 			tmp_token = lex(&data, &token);
