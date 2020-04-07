@@ -3,13 +3,13 @@ all: bin tool tool_output sqlite3 src gen bin/sqlite3Helper
 
 bin/sqlite3Helper: src/*.c tool_output/sqlite3_helper_gram.c tool_output/sqlite3_helper_lex.c sqlite3/sqlite3.o
 #	./bin/sqlite3Helper
-	gcc -O2 -s -o bin/sqlite3Helper src/sqlite3_helper_compiler.c sqlite3/sqlite3.o -Wall -ldl
+	gcc -O2 -s -o bin/sqlite3Helper -DNDEBUG src/sqlite3_helper_compiler.c sqlite3/sqlite3.o -Wall -ldl
 
 child: bin tool tool_output sqlite3 src gen child_build
 
 child_build: src/*.c tool_output/sqlite3_helper_gram.c tool_output/sqlite3_helper_lex.c ../sqlite3/sqlite3.o
 #	./bin/sqlite3Helper
-	gcc -O2 -s -o bin/sqlite3Helper -DCHILD_BUILD src/sqlite3_helper_compiler.c ../sqlite3/sqlite3.o -Wall -ldl && touch child_build
+	gcc -O2 -s -o bin/sqlite3Helper -DCHILD_BUILD -DNDEBUG src/sqlite3_helper_compiler.c ../sqlite3/sqlite3.o -Wall -ldl && touch child_build
 
 tool_output/sqlite3_helper_gram.c: tool/lemon src/sqlite3_helper_gram.y
 	./tool/lemon src/sqlite3_helper_gram.y -s -dtool_output
