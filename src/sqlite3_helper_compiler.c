@@ -152,13 +152,13 @@ generate_setup(u8 * out)
 			"\n\n#define %s_SETUP() \\\n"//1
 			"do{\\\n"
 			"sqlite3_stmt * s;\\\n"
-			"const char * t = %s_SETUPTEXT;\\\n"//1
-			"for (int i=0;i < %d; i++){\\\n" //2
-			"\tsqlite3_prepare_v2(%s,  t, -1, &s, &t);\\\n"//3
+			"const char * t = %s_SETUPTEXT;\\\n"//2
+			"for (int i=0;i < %d; i++){\\\n" //3
+			"\tsqlite3_prepare_v2(%s,  t, -1, &s, &t);\\\n"//4
 			"\tsqlite3_step(s);\\\n"
 			"\tsqlite3_finalize(s);\\\n"
 			"}\\\n"
-			"sqlite3_wal_checkpoint_v2(%s,\"main\",SQLITE_CHECKPOINT_PASSIVE,0,0);\\\n"//4
+			"sqlite3_wal_checkpoint_v2(%s,\"main\",SQLITE_CHECKPOINT_PASSIVE,0,0);\\\n"//5
 			"}while(0)\n\n"
 			,
 			db_name,//1
