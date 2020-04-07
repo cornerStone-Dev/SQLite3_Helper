@@ -657,6 +657,7 @@ int main(int argc, char **argv)
 	printf("Begining!\n");
 #endif
     
+	sqlite3_initialize();
 	sqlite3_open(":memory:", &db);
 	
 	db_SETUP();
