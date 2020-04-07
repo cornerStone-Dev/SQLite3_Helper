@@ -6,4 +6,5 @@ output/
 test/
 tool/
 tool_output/
+child_build
 *.geany

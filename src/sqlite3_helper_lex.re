@@ -39,7 +39,7 @@ static int lex(const u8 **YYCURSOR_p, Token * t) // YYCURSOR is defined as a fun
 
 loop: // label for looping within the lexxer
 
-	/*!re2c                          // start of re2c block
+	/*!re2c                          // start of re2c block **/
 	re2c:define:YYCTYPE = "u8";      //   configuration that defines YYCTYPE
 	re2c:yyfill:enable  = 0;         //   configuration that turns off YYFILL
 									 //
@@ -58,26 +58,6 @@ loop: // label for looping within the lexxer
 		*YYCURSOR_p = YYCURSOR;
 		return QUERY;
 	}
-	
-	//~ step { 
-		//~ *YYCURSOR_p = YYCURSOR;
-		//~ return STEP;
-	//~ }
-	
-	//~ column {
-		//~ *YYCURSOR_p = YYCURSOR;
-		//~ return COLUMN;
-	//~ }
-	
-	//~ reset {
-		//~ *YYCURSOR_p = YYCURSOR;
-		//~ return RESET;
-	//~ }
-	
-	//~ clear {
-		//~ *YYCURSOR_p = YYCURSOR;
-		//~ return CLEAR;
-	//~ }
 	
 	setup {
 		*YYCURSOR_p = YYCURSOR;

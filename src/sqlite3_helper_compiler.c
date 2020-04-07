@@ -36,8 +36,11 @@ typedef struct parser_s{
 	u32  qn_key;
 } ParserState;
 
-
+#ifdef CHILD_BUILD
+#include "../../sqlite3/sqlite3.h"
+#else
 #include "../sqlite3/sqlite3.h"
+#endif
 #include "../gen/sql3_macros.c"
 static sqlite3 * db;
 #include "build_data.c"
@@ -45,7 +48,6 @@ static sqlite3 * db;
 #include "../tool_output/sqlite3_helper_lex.c"
 #include "../tool_output/sqlite3_helper_gram.c"
 
-#define INTPUT_FILE "input/test.c"
 #define OUTPUT_FILE "gen/sql3_macros.c"
 
 #ifndef NDEBUG
@@ -635,12 +637,12 @@ print_queries(void)
 
 int main(int argc, char **argv)
 {
-	
+		
+	unsigned char output_string[65536] = {0};
+	unsigned char * output = output_string;
 	const unsigned char * data;
 	void *pEngine;     /* The LEMON-generated LALR(1) parser */
 	yyParser sEngine;  /* Space to hold the Lemon-generated Parser object */
-	unsigned char output_string[32768] = {0};
-	unsigned char * output = output_string;
 	Token token = {0};
 	int tmp_token;
 	ParserState p_s = {0};
@@ -753,17 +755,13 @@ int main(int argc, char **argv)
 	
 	/* code gen */
 	generate_macros(output, output_string, outputFile);
-	/* output to file */
-	//fwrite (output_string , sizeof(char), strlen((const char *)output_string), outputFile);
 	
-	/* flush file out of cache and close both files */
+	/* flush file out of cache and close file */
 	fflush (outputFile); 
 	fclose (outputFile);
 
 	
 	db_FINALIZE();
-	/* free parser memory */
-	/*ParseFree(pParser, free );*/
 	ParseFinalize(pEngine);
 	
 	return 0;
