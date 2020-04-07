@@ -652,6 +652,11 @@ int main(int argc, char **argv)
 	size_t result;
 	DIR *d;
     struct dirent *dir;
+    
+#ifndef NDEBUG
+	printf("Begining!\n");
+#endif
+    
 	sqlite3_open(":memory:", &db);
 	
 	db_SETUP();
