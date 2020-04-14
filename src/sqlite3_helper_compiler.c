@@ -343,6 +343,13 @@ generate_macros(u8 * out, u8 * begining, FILE * outputFile)
 					qt_key);
 				
 				out+=sprintf((char*)out,
+					"#define SQL3_SIZE_%s(x)  sqlite3_column_bytes(%s_stmt_array[%s_enum%d],x)\n",
+					query_name,
+					db_name,
+					db_name,
+					qt_key);
+				
+				out+=sprintf((char*)out,
 					"#define SQL3_COL_%s()  \\\n",
 					query_name);
 				
